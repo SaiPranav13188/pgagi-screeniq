@@ -5,12 +5,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 
 import httpx
 
-API = "http://localhost:8000/api/v1"
+API = os.environ.get("API_URL", "http://localhost:8000/api/v1")
 WEAK = "I think it is something related to the data, not sure."
 GOOD = (
     "{topic}: the core idea is to choose the model or split that best reduces uncertainty about the target while "

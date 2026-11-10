@@ -6,6 +6,12 @@
 
 Built for the **PGAGI AI/ML & Backend Engineering Intern** assignment.
 
+**Live demo:** [pgagi-screeniq-sai-fd17.vercel.app](https://pgagi-screeniq-sai-fd17.vercel.app) ·
+**API docs:** [screeniq-api-ci4c.onrender.com/docs](https://screeniq-api-ci4c.onrender.com/docs)
+
+> The backend runs on Render's free tier, which sleeps when idle — the first request after a pause can take
+> about a minute to wake it up. Sample resumes to try are in [`docs/sample_resumes/`](docs/sample_resumes/).
+
 | | |
 |---|---|
 | **Frontend** | Next.js 15 (App Router) · TypeScript · Tailwind v4 · Framer Motion |
