@@ -138,13 +138,13 @@ export default function SessionsPage() {
           {[
             { icon: Layers, label: "Interviews", value: stats.total, c: "#a78bfa" },
             { icon: CheckCircle2, label: "Completed", value: stats.completed, c: "#34d399" },
-            { icon: Gauge, label: "Avg. score / 100", value: stats.avg, c: "#22d3ee", d: 0 },
+            { icon: Gauge, label: "Avg. score / 100", value: stats.avg, c: "#22d3ee", d: 0, empty: stats.completed === 0 },
             { icon: Sparkles, label: "Questions asked", value: stats.questions, c: "#f472b6" },
           ].map((s) => (
             <motion.div key={s.label} variants={itemUp} className="glass relative overflow-hidden rounded-2xl p-4">
               <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full blur-2xl" style={{ background: `${s.c}33` }} />
               <s.icon className="h-4 w-4" style={{ color: s.c }} />
-              <div className="mt-3 text-2xl font-semibold text-white">{items ? <AnimatedNumber value={s.value} decimals={s.d ?? 0} /> : "–"}</div>
+              <div className="mt-3 text-2xl font-semibold text-white">{items && !s.empty ? <AnimatedNumber value={s.value} decimals={s.d ?? 0} /> : "–"}</div>
               <div className="mt-0.5 text-xs text-ink-400">{s.label}</div>
             </motion.div>
           ))}
