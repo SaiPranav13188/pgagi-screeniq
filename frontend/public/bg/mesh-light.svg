@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="90" />
+    </filter>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8f7ff" />
+      <stop offset="0.55" stop-color="#f5f8ff" />
+      <stop offset="1" stop-color="#fbf6fb" />
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7c3aed" stop-opacity="0" />
+      <stop offset="0.35" stop-color="#7c3aed" stop-opacity="0.16" />
+      <stop offset="0.7" stop-color="#0891b2" stop-opacity="0.14" />
+      <stop offset="1" stop-color="#0891b2" stop-opacity="0" />
+    </linearGradient>
+    <radialGradient id="node">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.9" />
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#base)" />
+
+  <!-- soft colour mesh -->
+  <g filter="url(#blur)">
+    <ellipse cx="230" cy="120" rx="420" ry="300" fill="#c4b5fd" opacity="0.55" />
+    <ellipse cx="1380" cy="90" rx="420" ry="280" fill="#a5f3fc" opacity="0.55" />
+    <ellipse cx="1240" cy="560" rx="360" ry="260" fill="#fbcfe8" opacity="0.5" />
+    <ellipse cx="380" cy="760" rx="420" ry="260" fill="#ddd6fe" opacity="0.55" />
+    <ellipse cx="820" cy="420" rx="300" ry="200" fill="#e0e7ff" opacity="0.6" />
+    <ellipse cx="900" cy="980" rx="460" ry="200" fill="#bae6fd" opacity="0.45" />
+  </g>
+
+  <!-- flowing contour lines -->
+  <g fill="none" stroke="url(#line)" stroke-width="1.3">
+    <path d="M-50 640 C 250 560, 420 760, 760 660 S 1260 520, 1650 600" />
+    <path d="M-50 676 C 260 600, 440 800, 770 700 S 1270 560, 1650 640" />
+    <path d="M-50 712 C 270 640, 460 840, 780 740 S 1280 600, 1650 680" />
+    <path d="M-50 748 C 280 680, 480 880, 790 780 S 1290 640, 1650 720" />
+    <path d="M-50 784 C 290 720, 500 920, 800 820 S 1300 680, 1650 760" />
+    <path d="M-50 260 C 300 200, 520 360, 860 280 S 1320 160, 1650 230" opacity="0.7" />
+    <path d="M-50 292 C 310 236, 540 396, 870 316 S 1330 196, 1650 266" opacity="0.7" />
+    <path d="M-50 324 C 320 272, 560 432, 880 352 S 1340 232, 1650 302" opacity="0.7" />
+  </g>
+
+  <!-- neural constellation -->
+  <g stroke="#7c3aed" stroke-opacity="0.13" stroke-width="1">
+    <path d="M1180 170 L1290 230 L1420 190 L1500 300 L1380 340 L1290 230 M1380 340 L1260 420 L1180 330 L1180 170 M1180 330 L1290 230 M1500 300 L1560 420 L1380 340" />
+    <path d="M120 420 L230 470 L180 590 L70 540 Z M230 470 L330 430 L400 520 L300 600 L180 590 M300 600 L230 470" />
+  </g>
+  <g fill="url(#node)">
+    <circle cx="1180" cy="170" r="9" /><circle cx="1290" cy="230" r="11" /><circle cx="1420" cy="190" r="8" />
+    <circle cx="1500" cy="300" r="10" /><circle cx="1380" cy="340" r="12" /><circle cx="1260" cy="420" r="8" />
+    <circle cx="1180" cy="330" r="9" /><circle cx="1560" cy="420" r="8" />
+    <circle cx="120" cy="420" r="8" /><circle cx="230" cy="470" r="11" /><circle cx="180" cy="590" r="9" />
+    <circle cx="70" cy="540" r="7" /><circle cx="330" cy="430" r="8" /><circle cx="400" cy="520" r="9" /><circle cx="300" cy="600" r="10" />
+  </g>
+  <g fill="#7c3aed" fill-opacity="0.45">
+    <circle cx="1180" cy="170" r="2.2" /><circle cx="1290" cy="230" r="2.6" /><circle cx="1420" cy="190" r="2" />
+    <circle cx="1500" cy="300" r="2.4" /><circle cx="1380" cy="340" r="2.8" /><circle cx="1260" cy="420" r="2" />
+    <circle cx="1180" cy="330" r="2.2" /><circle cx="1560" cy="420" r="2" />
+    <circle cx="120" cy="420" r="2" /><circle cx="230" cy="470" r="2.6" /><circle cx="180" cy="590" r="2.2" />
+    <circle cx="70" cy="540" r="1.8" /><circle cx="330" cy="430" r="2" /><circle cx="400" cy="520" r="2.2" /><circle cx="300" cy="600" r="2.4" />
+  </g>
+</svg>

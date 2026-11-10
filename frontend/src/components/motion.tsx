@@ -23,7 +23,6 @@ export function Aurora({ className, intensity = 1 }: { className?: string; inten
         className="absolute top-[30%] left-[35%] h-[50vh] w-[50vh] rounded-full blur-[140px] animate-aurora [animation-delay:-12s]"
         style={{ background: "radial-gradient(circle, rgba(244,114,182,0.35), transparent 65%)", opacity: 0.3 * intensity }}
       />
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-ink-950" />
     </div>
   );
 }

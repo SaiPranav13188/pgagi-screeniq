@@ -80,10 +80,24 @@ html {
 
 body {
   background: var(--bg);
+  position: relative;
   color: var(--fg);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* Full-page background artwork (soft colour mesh, contour lines, neural constellation). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("/bg/mesh-dark.svg") center / cover no-repeat;
+}
+[data-theme="light"] body::before {
+  background-image: url("/bg/mesh-light.svg");
 }
 
 ::selection {
@@ -252,8 +266,8 @@ body {
 }
 [data-theme="light"] .bg-grid {
   background-image:
-    linear-gradient(rgba(15, 18, 35, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 18, 35, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(76, 29, 149, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76, 29, 149, 0.035) 1px, transparent 1px);
 }
 [data-theme="light"] .bg-dots {
   background-image: radial-gradient(rgba(15, 18, 35, 0.1) 1px, transparent 1px);
