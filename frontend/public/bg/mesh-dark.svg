@@ -41,7 +41,7 @@
     <path d="M-50 324 C 320 272, 560 432, 880 352 S 1340 232, 1650 302" opacity="0.7" />
   </g>
 
-  <g stroke="#a78bfa" stroke-opacity="0.12" stroke-width="1">
+  <g fill="none" stroke="#a78bfa" stroke-opacity="0.12" stroke-width="1">
     <path d="M1180 170 L1290 230 L1420 190 L1500 300 L1380 340 L1290 230 M1380 340 L1260 420 L1180 330 L1180 170 M1180 330 L1290 230 M1500 300 L1560 420 L1380 340" />
     <path d="M120 420 L230 470 L180 590 L70 540 Z M230 470 L330 430 L400 520 L300 600 L180 590 M300 600 L230 470" />
   </g>
