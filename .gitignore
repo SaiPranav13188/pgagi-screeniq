@@ -1,0 +1,33 @@
+# Secrets
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Generated data (rebuilt by `python -m scripts.ingest`)
+backend/data/
+# Books are copyrighted and large - download separately (see README)
+data/books/*.pdf
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Private assignment brief
+PGAGI_ASSIGNMENT.md

@@ -1,0 +1,25 @@
+Riya Kapoor
+riya.kapoor@example.com | linkedin.com/in/riyakapoor | Pune, India
+
+OBJECTIVE
+Final year B.Tech student seeking a Data Science internship. Passionate about turning data into insights.
+
+EDUCATION
+B.Tech in Information Technology, Pune Institute of Technology — Expected 2026 | CGPA 8.7
+
+INTERNSHIP
+Data Analyst Intern, HealthPlus Clinics (Healthcare) — Summer 2025
+- Cleaned and analysed patient appointment data using Pandas and Matplotlib.
+- Built a linear regression model to forecast weekly patient visits.
+
+PROJECTS
+House Price Predictor | Linear regression and decision tree models in scikit-learn on the Kaggle housing dataset.
+Movie Recommender | Simple recommendation system using cosine similarity and KNN.
+Student Performance Analysis | Exploratory data analysis (EDA) and data visualisation with Seaborn.
+
+SKILLS
+Python, SQL, Pandas, NumPy, Matplotlib, Seaborn, scikit-learn, Jupyter, Excel, Git
+Machine Learning, Regression, Classification, Data Cleaning, Statistics
+
+CERTIFICATIONS
+Machine Learning Specialization (Coursera)
