@@ -56,7 +56,8 @@ def session_out(s: InterviewSession) -> SessionOut:
         id=s.id, role_id=s.role_id, role_title=role.title if role else s.role_id, status=s.status, mode=s.mode,
         target_questions=s.target_questions, candidate_name=s.candidate_name, resume_filename=s.resume_filename,
         profile=s.profile, plan=s.plan, llm_mode=s.llm_mode, follow_ups_used=s.follow_ups_used,
-        difficulty_offset=s.difficulty_offset, created_at=s.created_at, completed_at=s.completed_at,
+        difficulty_offset=s.difficulty_offset, difficulty_level=s.difficulty_level or "auto",
+        created_at=s.created_at, completed_at=s.completed_at,
         questions=[question_out(q, reveal=reveal, mode=s.mode) for q in s.questions],
         current_question_id=current.id if current else None,
         progress=progress(s),
@@ -69,6 +70,7 @@ def session_summary(s: InterviewSession) -> SessionSummaryOut:
         id=s.id, role_id=s.role_id, role_title=role.title if role else s.role_id, candidate_name=s.candidate_name,
         status=s.status, created_at=s.created_at, questions=len(s.questions),
         overall_score=(s.report.data or {}).get("overall_score") if s.report else None,
+        difficulty_level=s.difficulty_level or "auto",
     )
 
 

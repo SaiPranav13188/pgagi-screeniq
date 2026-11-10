@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import get_settings
@@ -39,10 +39,26 @@ class Base(DeclarativeBase):
     pass
 
 
+# Columns added after the first release: (table, column, DDL type + default). `create_all` only creates
+# missing tables, so existing databases get these via an idempotent ALTER TABLE on startup.
+_ADDED_COLUMNS = [
+    ("interview_sessions", "difficulty_level", "VARCHAR(16) NOT NULL DEFAULT 'auto'"),
+]
+
+
+def _migrate() -> None:
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table, column, ddl in _ADDED_COLUMNS:
+            if table in insp.get_table_names() and column not in {c["name"] for c in insp.get_columns(table)}:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
+
+
 def init_db() -> None:
     from app.db import models  # noqa: F401  (register models)
 
     Base.metadata.create_all(bind=engine)
+    _migrate()
 
 
 def get_db() -> Iterator[Session]:

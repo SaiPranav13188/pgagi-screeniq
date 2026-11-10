@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AnimatedNumber, Aurora, EASE, itemUp, stagger } from "@/components/motion";
-import { Button, SectionLabel, Skeleton } from "@/components/ui";
+import { Button, LEVELS, SectionLabel, Skeleton, type Level } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { SessionSummary } from "@/lib/types";
 import { cn, scoreColor } from "@/lib/utils";
@@ -220,6 +220,12 @@ export default function SessionsPage() {
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-400">
                           <span className="text-ink-300">{s.role_title}</span>
+                          {s.difficulty_level && (
+                            <span className="inline-flex items-center gap-1" style={{ color: LEVELS[s.difficulty_level as Level]?.color }}>
+                              <span className="h-1.5 w-1.5 rounded-full" style={{ background: LEVELS[s.difficulty_level as Level]?.color }} />
+                              {LEVELS[s.difficulty_level as Level]?.label}
+                            </span>
+                          )}
                           <span className="inline-flex items-center gap-1">
                             <Sparkles className="h-3 w-3" /> {s.questions} question{s.questions === 1 ? "" : "s"}
                           </span>

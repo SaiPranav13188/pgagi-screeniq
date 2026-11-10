@@ -52,7 +52,14 @@ export type PlannedTopic = {
 export type Plan = {
   role_id: string;
   books: string[];
-  calibration: { seniority: string; base_difficulty: number; advanced_unlocked: boolean; rationale: string };
+  calibration: {
+    seniority: string;
+    base_difficulty: number;
+    advanced_unlocked: boolean;
+    rationale: string;
+    level?: "auto" | "easy" | "medium" | "hard";
+    band?: [number, number];
+  };
   alignment: { competency_id: string; name: string; score: number; matched: string[] }[];
   topics: PlannedTopic[];
   generator: string;
@@ -156,6 +163,7 @@ export type Session = {
   llm_mode: string;
   follow_ups_used: number;
   difficulty_offset: number;
+  difficulty_level?: "auto" | "easy" | "medium" | "hard";
   created_at: string;
   completed_at: string | null;
   questions: Question[];
@@ -172,6 +180,7 @@ export type SessionSummary = {
   created_at: string;
   questions: number;
   overall_score: number | null;
+  difficulty_level?: "auto" | "easy" | "medium" | "hard";
 };
 
 export type AnswerResult = {

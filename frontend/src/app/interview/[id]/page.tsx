@@ -10,7 +10,7 @@ import { DecisionBanner, EvaluationCard } from "@/components/evaluation-card";
 import { Aurora, EASE, Typewriter } from "@/components/motion";
 import { RagLoader } from "@/components/rag-loader";
 import { TraceDrawer } from "@/components/trace-drawer";
-import { Badge, Button, DifficultyPips, ProgressBar } from "@/components/ui";
+import { Badge, Button, DifficultyPips, LEVELS, ProgressBar, type Level } from "@/components/ui";
 import { AnswerModeToggle, ListenButton, VoicePanel, type AnswerMode } from "@/components/voice";
 import { INTERVIEWER_NAME, LiveStage, LiveStartGate, type LiveState, type Turn } from "@/components/live-interviewer";
 import { api, ApiError } from "@/lib/api";
@@ -335,6 +335,12 @@ export default function InterviewRoom() {
             <div className="truncate text-sm font-medium text-white">{session?.candidate_name || "…"}</div>
             <div className="truncate text-xs text-ink-400">
               {session?.role_title} · {session?.mode} mode
+              {session?.difficulty_level && (
+                <>
+                  {" · "}
+                  <span style={{ color: LEVELS[session.difficulty_level as Level]?.color }}>{LEVELS[session.difficulty_level as Level]?.label}</span>
+                </>
+              )}
             </div>
           </div>
           <div className="mx-auto hidden w-full max-w-sm items-center gap-3 md:flex">

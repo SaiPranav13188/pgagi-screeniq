@@ -26,7 +26,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { AlignmentCard, ProfileCard, TopicPlan } from "@/components/blueprint";
 import { Aurora, EASE, SpotlightCard } from "@/components/motion";
-import { Badge, Button, SectionLabel } from "@/components/ui";
+import { Badge, Button, LEVELS, SectionLabel, type Level } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import type { Role, Session } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -62,6 +62,7 @@ export default function NewInterview() {
   const [roleId, setRoleId] = useState<string | null>(null);
   const [mode, setMode] = useState<"interview" | "practice">("interview");
   const [count, setCount] = useState(6);
+  const [level, setLevel] = useState<Level>("auto");
   const [phase, setPhase] = useState<"form" | "processing" | "blueprint">("form");
   const [procStep, setProcStep] = useState(0);
   const [session, setSession] = useState<Session | null>(null);
@@ -107,6 +108,7 @@ export default function NewInterview() {
       form.append("role_id", roleId);
       form.append("mode", mode);
       form.append("num_questions", String(count));
+      form.append("difficulty", level);
       if (name.trim()) form.append("candidate_name", name.trim());
       const created = await api.createSession(form);
       clearInterval(ticker);
@@ -333,6 +335,64 @@ export default function NewInterview() {
                       {step === 2 && (
                         <div className="space-y-6">
                           <div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-white">Difficulty</span>
+                              <span className="text-[11px] text-ink-400">{LEVELS[level].hint}</span>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                              {(Object.keys(LEVELS) as Level[]).map((id) => {
+                                const l = LEVELS[id];
+                                const sel = level === id;
+                                return (
+                                  <motion.button
+                                    key={id}
+                                    type="button"
+                                    whileHover={{ y: -2 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={() => setLevel(id)}
+                                    className={cn(
+                                      "relative overflow-hidden rounded-2xl border p-4 text-left transition-colors",
+                                      sel ? "bg-white/[0.05]" : "border-white/10 bg-white/[0.02] hover:bg-white/[0.04]",
+                                    )}
+                                    style={sel ? { borderColor: `${l.color}99`, boxShadow: `0 0 34px -10px ${l.color}` } : undefined}
+                                  >
+                                    {sel && (
+                                      <motion.span
+                                        layoutId="level-glow"
+                                        className="absolute inset-0"
+                                        style={{ background: `radial-gradient(120% 90% at 0% 0%, ${l.color}22, transparent 60%)` }}
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                      />
+                                    )}
+                                    <div className="relative flex items-center justify-between">
+                                      <span className="font-medium" style={{ color: sel ? l.color : "#fff" }}>
+                                        {l.label}
+                                      </span>
+                                      {id === "auto" && <Sparkles className="h-3.5 w-3.5 text-violet-300" />}
+                                    </div>
+                                    {/* five pips: the allowed band is lit */}
+                                    <div className="relative mt-3 flex gap-1">
+                                      {[1, 2, 3, 4, 5].map((p) => {
+                                        const on = p >= l.band[0] && p <= l.band[1];
+                                        return (
+                                          <motion.span
+                                            key={p}
+                                            className="h-1.5 flex-1 rounded-full"
+                                            animate={{ background: on ? l.color : "rgba(255,255,255,0.08)", opacity: on ? (sel ? 1 : 0.55) : 1 }}
+                                            transition={{ delay: sel ? p * 0.04 : 0 }}
+                                          />
+                                        );
+                                      })}
+                                    </div>
+                                    <div className="relative mt-2 font-mono text-[10.5px] text-ink-400">
+                                      {id === "auto" ? "from resume" : `level ${l.band[0]}–${l.band[1]}`}
+                                    </div>
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div>
                             <div className="text-sm text-white">Mode</div>
                             <div className="mt-3 grid gap-3 sm:grid-cols-2">
                               {[
@@ -389,7 +449,7 @@ export default function NewInterview() {
                             <div className="text-xs uppercase tracking-[0.16em] text-ink-400">Summary</div>
                             <div className="mt-2 text-ink-200">
                               <span className="text-white">{file?.name}</span> → <span className="text-white">{roles.find((r) => r.id === roleId)?.title}</span> ·{" "}
-                              {mode} mode · {count} topics
+                              {mode} mode · <span style={{ color: LEVELS[level].color }}>{LEVELS[level].label}</span> difficulty · {count} topics
                             </div>
                           </div>
                         </div>

@@ -32,12 +32,15 @@ async def create_session(
     candidate_name: str | None = Form(None, max_length=200),
     mode: Literal["interview", "practice"] = Form("interview"),
     num_questions: int | None = Form(None),
+    difficulty: Literal["auto", "easy", "medium", "hard"] = Form(
+        "auto", description="Question difficulty: auto (from the resume) or a fixed easy / medium / hard level"
+    ),
     db: Session = Depends(get_db),
 ):
     data = await resume.read()
     s = interview.create_session(
         db, filename=resume.filename or "resume", data=data, role_id=role_id,
-        candidate_name=candidate_name, mode=mode, num_questions=num_questions,
+        candidate_name=candidate_name, mode=mode, num_questions=num_questions, difficulty=difficulty,
     )
     return ser.session_out(s)
 

@@ -72,7 +72,7 @@ def generate_question(
                     ),
                     temperature=temperature,
                 )
-                raw["difficulty"] = max(1, min(5, int(raw.get("difficulty") or difficulty)))
+                raw["difficulty"] = difficulty  # the engine's level is authoritative (keeps Easy/Medium/Hard honest)
                 raw["expected_points"] = [
                     p if isinstance(p, str) else " ".join(str(v) for v in p.values()) if isinstance(p, dict) else str(p)
                     for p in (raw.get("expected_points") or [])

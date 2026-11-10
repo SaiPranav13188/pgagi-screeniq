@@ -63,6 +63,26 @@ export function Badge({ children, color, className, dot }: { children: ReactNode
   );
 }
 
+export type Level = "auto" | "easy" | "medium" | "hard";
+
+/** Interviewer-selected difficulty levels — kept in sync with backend `planner.LEVELS`. */
+export const LEVELS: Record<Level, { label: string; color: string; band: [number, number]; hint: string }> = {
+  auto: { label: "Auto", color: "#a78bfa", band: [1, 5], hint: "Calibrated from the resume, then adapts to answers" },
+  easy: { label: "Easy", color: "#34d399", band: [1, 2], hint: "Fundamentals & definitions · levels 1–2" },
+  medium: { label: "Medium", color: "#fbbf24", band: [2, 4], hint: "Application & trade-offs · levels 2–4" },
+  hard: { label: "Hard", color: "#fb7185", band: [4, 5], hint: "Deep theory & design · levels 4–5 · advanced books" },
+};
+
+export function LevelBadge({ level, className }: { level?: string | null; className?: string }) {
+  const l = LEVELS[(level as Level) in LEVELS ? (level as Level) : "auto"];
+  return (
+    <Badge color={l.color} dot className={className}>
+      {l.label}
+      {level && level !== "auto" ? "" : " difficulty"}
+    </Badge>
+  );
+}
+
 const PIP_COLORS = ["#34d399", "#22d3ee", "#8b5cf6", "#f472b6", "#fb7185"];
 
 export function DifficultyPips({ level, showLabel = true, animate = true }: { level: number; showLabel?: boolean; animate?: boolean }) {

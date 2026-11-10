@@ -76,6 +76,7 @@ class SessionOut(BaseModel):
     llm_mode: str
     follow_ups_used: int
     difficulty_offset: int
+    difficulty_level: str = "auto"
     created_at: datetime
     completed_at: datetime | None
     questions: list[QuestionOut] = []
@@ -92,6 +93,7 @@ class SessionSummaryOut(BaseModel):
     created_at: datetime
     questions: int
     overall_score: float | None
+    difficulty_level: str = "auto"
 
 
 class AnswerResultOut(BaseModel):

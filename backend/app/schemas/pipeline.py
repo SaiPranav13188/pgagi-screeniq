@@ -72,11 +72,17 @@ class PlannedTopic(BaseModel):
     queries: list[str] = Field(min_length=1)
 
 
+DifficultyLevel = Literal["auto", "easy", "medium", "hard"]
+
+
 class Calibration(BaseModel):
     seniority: Seniority
     base_difficulty: int
     advanced_unlocked: bool
     rationale: str
+    # Interviewer-selected level; "auto" lets the resume decide. Every question stays inside `band`.
+    level: DifficultyLevel = "auto"
+    band: tuple[int, int] = (1, 5)
 
 
 class InterviewPlan(BaseModel):

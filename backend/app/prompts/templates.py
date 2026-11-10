@@ -49,7 +49,10 @@ resume vocabulary. Return JSON only.
 {DIFFICULTY_RUBRIC}"""
 
 
-def plan_prompt(role: dict, profile: dict, alignment: list[dict], base_difficulty: int, n_topics: int) -> str:
+def plan_prompt(
+    role: dict, profile: dict, alignment: list[dict], base_difficulty: int, n_topics: int, band: tuple[int, int] = (1, 5)
+) -> str:
+    lo, hi = band
     return f"""ROLE: {role['title']} - {role['description']}
 
 ROLE COMPETENCIES (choose topics from these ids; id is mandatory):
@@ -62,13 +65,14 @@ RESUME/ROLE ALIGNMENT (0-1, from keyword overlap):
 {json.dumps(alignment, indent=1)}
 
 Calibrated base difficulty for this candidate: {base_difficulty}/5.
+Allowed difficulty range for this interview: {lo}-{hi} (every topic's difficulty MUST be within it).
 
 Design exactly {n_topics} topics. Rules:
 - About 60% should be anchored in the resume (resume_anchor = the specific claim/project being probed),
   the rest should cover high-importance role competencies with weak alignment (resume_anchor = null).
 - Each topic uses a DIFFERENT competency id unless there are fewer competencies than topics.
 - Order: start with a resume-anchored warm-up near the base difficulty, then progress.
-- difficulty: base +1 for areas the candidate claims depth in, base -1 for unfamiliar areas (clamp 1-5).
+- difficulty: base +1 for areas the candidate claims depth in, base -1 for unfamiliar areas (clamp to {lo}-{hi}).
 - question_style varies across topics: conceptual, applied, scenario, comparison, debugging, design.
 - queries: 2-3 distinct textbook-style search queries per topic.
 

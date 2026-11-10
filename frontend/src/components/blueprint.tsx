@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Anchor, Briefcase, GraduationCap, Layers, Search, Sparkles, Unlock } from "lucide-react";
 import { itemPop, itemUp, stagger } from "@/components/motion";
-import { Badge, DifficultyPips } from "@/components/ui";
+import { Badge, DifficultyPips, LevelBadge } from "@/components/ui";
 import type { Plan, Profile } from "@/lib/types";
 import { BOOK_COLORS, BOOK_SHORT, QTYPE_LABEL } from "@/lib/utils";
 
@@ -148,6 +148,8 @@ export function AlignmentCard({ plan }: { plan: Plan }) {
         <div className="flex items-center gap-2 text-xs text-white">
           <DifficultyPips level={plan.calibration.base_difficulty} />
           <span className="text-ink-400">base level</span>
+          <span className="ml-auto" />
+          <LevelBadge level={plan.calibration.level} />
         </div>
         <p className="mt-2 text-xs leading-relaxed text-ink-300">{plan.calibration.rationale}</p>
         <div className="mt-3 flex flex-wrap gap-1.5">

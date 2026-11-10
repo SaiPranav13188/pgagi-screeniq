@@ -48,7 +48,17 @@ def get_session(db: Session, sid: str) -> InterviewSession:
 
 
 # --------------------------------------------------------------------------- stage 1-2
-def create_session(db: Session, *, filename: str, data: bytes, role_id: str, candidate_name: str | None, mode: str, num_questions: int | None) -> InterviewSession:
+def create_session(
+    db: Session,
+    *,
+    filename: str,
+    data: bytes,
+    role_id: str,
+    candidate_name: str | None,
+    mode: str,
+    num_questions: int | None,
+    difficulty: str = "auto",
+) -> InterviewSession:
     cfg = get_settings()
     role = get_role(role_id)
     if not role:
@@ -67,6 +77,7 @@ def create_session(db: Session, *, filename: str, data: bytes, role_id: str, can
     s = InterviewSession(
         role_id=role_id,
         mode=mode,
+        difficulty_level=difficulty,
         target_questions=n,
         candidate_name=(candidate_name or profile.name or "Candidate").strip()[:200],
         resume_filename=filename[:255],
@@ -91,14 +102,15 @@ def plan_session(db: Session, sid: str) -> InterviewSession:
     role = get_role(s.role_id)
     assert role
     t0 = time.perf_counter()
-    plan = planner.build_plan(ResumeProfile.model_validate(s.profile), role, s.target_questions)
+    plan = planner.build_plan(ResumeProfile.model_validate(s.profile), role, s.target_questions, s.difficulty_level or "auto")
     if not plan.books:
         raise ConflictError("Knowledge base is empty. Run ingestion first (python -m scripts.ingest).", code="kb_not_ready")
     s.plan = plan.model_dump()
     s.status = "planned"
     _event(db, s.id, "plan_built",
            f"Built {len(plan.topics)}-topic blueprint over {len(plan.books)} books ({plan.generator})",
-           {"books": plan.books, "base_difficulty": plan.calibration.base_difficulty}, int((time.perf_counter() - t0) * 1000))
+           {"books": plan.books, "base_difficulty": plan.calibration.base_difficulty, "level": plan.calibration.level,
+            "band": list(plan.calibration.band)}, int((time.perf_counter() - t0) * 1000))
     db.commit()
     return s
 
@@ -126,6 +138,7 @@ def next_question(db: Session, sid: str) -> Question | None:
         return q  # idempotent: unanswered question is re-served (refresh-safe)
 
     plan = InterviewPlan.model_validate(s.plan)
+    band = plan.calibration.band  # the selected Easy/Medium/Hard level bounds every question
     role = get_role(s.role_id)
     assert role
     profile = ResumeProfile.model_validate(s.profile)
@@ -138,7 +151,7 @@ def next_question(db: Session, sid: str) -> Question | None:
         topic = plan.topics[parent.topic_index]
         missed = (parent.answer.evaluation or {}).get("missed_points", [])[:2]
         queries = [*missed, topic.focus][:3]
-        difficulty = max(1, parent.difficulty - 1)
+        difficulty = planner.clamp_to_band(parent.difficulty - 1, band)
         follow_up_ctx = {"question": parent.text, "answer": parent.answer.text, "missed_points": missed}
         kind = "follow_up"
     else:
@@ -147,7 +160,7 @@ def next_question(db: Session, sid: str) -> Question | None:
             return None
         topic = plan.topics[primary_done]
         queries = topic.queries
-        difficulty = max(1, min(5, topic.difficulty + s.difficulty_offset))
+        difficulty = planner.clamp_to_band(topic.difficulty + s.difficulty_offset, band)
         kind = "primary"
 
     # Stage 4: retrieval (avoid recycling passages already used for other topics)

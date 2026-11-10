@@ -223,7 +223,7 @@ Try it live at **`/knowledge`** (retrieval playground) or `POST /api/v1/knowledg
 | Lever | Mechanism |
 |---|---|
 | **Topic selection** | Each role competency is scored for resume evidence (keyword overlap over skills, evidence snippets, projects). ≈60% of topics are **resume-anchored** (verify claimed depth), ≈40% cover **role-critical gaps** the resume is silent on. |
-| **Difficulty** | Base level from seniority & ML depth (student/junior 2, mid 3, senior/lead 4; ±1 for strength). Anchored topics +1 (probe depth beyond usage), unfamiliar topics −1 (test fundamentals). Then answers move it live (§6). |
+| **Difficulty** | Base level from seniority & ML depth (student/junior 2, mid 3, senior/lead 4; ±1 for strength). Anchored topics +1 (probe depth beyond usage), unfamiliar topics −1 (test fundamentals). Then answers move it live (§6). The interviewer can instead pick a fixed level — **Easy** (levels 1–2), **Medium** (2–4) or **Hard** (4–5, advanced books unlocked); every planned topic, follow-up and adaptive step is then clamped to that band, while the resume still chooses the topics. |
 | **Direction** | Strong profiles **unlock the advanced corpus** (Bishop PRML, AI·ML·DL) for AI/ML and Data Science roles. Queries blend textbook terms with the candidate's own technologies, and questions are asked to connect to the candidate's projects (`resume_link`). |
 
 The blueprint (alignment bars, calibration rationale, every topic's rationale and queries) is shown to the user before the interview starts.
@@ -275,7 +275,7 @@ Base path `/api/v1` — interactive docs at `/docs`.
 | GET | `/knowledge-base` | 4 | Per-book ingestion stats, chunking/retrieval config |
 | POST | `/knowledge-base/search` | 4 | Retrieval playground |
 | POST | `/knowledge-base/ingest?force=` | 4 | (Re)build KB in background |
-| POST | `/sessions` (multipart) | 1–2 | Upload resume + role → parsed profile |
+| POST | `/sessions` (multipart) | 1–2 | Upload resume + role (+ `mode`, `num_questions`, `difficulty` = auto/easy/medium/hard) → parsed profile |
 | GET | `/sessions` · `/sessions/{id}` · DELETE `/sessions/{id}` | – | List / full state (resume after refresh) / delete |
 | POST | `/sessions/{id}/plan` | 3 | Build the blueprint (idempotent) |
 | POST | `/sessions/{id}/questions/next` | 4–5 | Retrieve + generate (idempotent: re-serves an open question) |

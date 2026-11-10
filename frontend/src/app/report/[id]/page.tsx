@@ -27,7 +27,7 @@ import { RadarChart, ScoreTimeline } from "@/components/charts";
 import { EvaluationCard } from "@/components/evaluation-card";
 import { AnimatedNumber, Aurora, EASE, Reveal, ScoreRing } from "@/components/motion";
 import { ChunkCard } from "@/components/trace-drawer";
-import { Badge, Button, DifficultyPips, SectionLabel, Skeleton } from "@/components/ui";
+import { Badge, Button, DifficultyPips, LevelBadge, SectionLabel, Skeleton } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import type { EventLog, Question, Report, Session } from "@/lib/types";
 import { BOOK_COLORS, cn, formatDuration, QTYPE_LABEL, scoreColor } from "@/lib/utils";
@@ -123,6 +123,7 @@ export default function ReportPage() {
                 <Badge color={tone} dot className="text-xs">
                   {report.signal.label}
                 </Badge>
+                <LevelBadge level={session.difficulty_level} className="ml-2 text-xs" />
               </motion.div>
               <motion.h1
                 initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}

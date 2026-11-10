@@ -44,6 +44,7 @@ class InterviewSession(Base):
     current_topic_index: Mapped[int] = mapped_column(Integer, default=0)
     follow_ups_used: Mapped[int] = mapped_column(Integer, default=0)
     difficulty_offset: Mapped[int] = mapped_column(Integer, default=0)  # adaptive drift
+    difficulty_level: Mapped[str] = mapped_column(String(16), default="auto")  # auto | easy | medium | hard
     llm_mode: Mapped[str] = mapped_column(String(64), default="offline")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)

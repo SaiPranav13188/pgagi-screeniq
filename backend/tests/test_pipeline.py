@@ -64,6 +64,23 @@ def test_alignment_and_plan_are_resume_driven():
     assert len({t.question_style for t in topics}) > 2
 
 
+def test_selected_difficulty_level_bounds_every_topic():
+    role = ROLES["data_scientist"]
+    p = resume_parser.heuristic_profile(RESUME)
+    alignment = list(planner.compute_alignment(p, role).copy())
+    expected = {"easy": (1, 2), "medium": (2, 4), "hard": (4, 5), "auto": (1, 5)}
+    for level, band in expected.items():
+        cal = planner.calibrate(p, level)
+        assert cal.level == level and tuple(cal.band) == band
+        assert band[0] <= cal.base_difficulty <= band[1]
+        topics = planner.heuristic_topics(role, p, alignment, cal.base_difficulty, 6, cal.band)
+        assert all(band[0] <= t.difficulty <= band[1] for t in topics), level
+    assert planner.calibrate(p, "hard").advanced_unlocked  # hard opens the advanced books
+    assert not planner.calibrate(p, "easy").advanced_unlocked
+    # the adaptive engine can never push a question outside the chosen band
+    assert planner.clamp_to_band(5 + 2, (1, 2)) == 2 and planner.clamp_to_band(1 - 2, (4, 5)) == 4
+
+
 def test_quality_gate_rejects_code_and_index_pages():
     prose = "Decision trees classify instances by sorting them down the tree from the root to some leaf node. " * 5
     assert _quality_ok(prose)

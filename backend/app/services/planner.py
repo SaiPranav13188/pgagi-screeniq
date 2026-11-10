@@ -25,6 +25,19 @@ log = logging.getLogger(__name__)
 BASE_DIFFICULTY = {"student": 2, "junior": 2, "mid": 3, "senior": 4, "lead": 4}
 STYLES = ["applied", "conceptual", "scenario", "comparison", "debugging", "design"]
 
+# Interviewer-selected difficulty levels: (base difficulty, allowed band). "auto" = resume decides.
+LEVELS: dict[str, tuple[int, tuple[int, int]]] = {
+    "easy": (2, (1, 2)),
+    "medium": (3, (2, 4)),
+    "hard": (4, (4, 5)),
+}
+LEVEL_NAMES = {"auto": "Auto", "easy": "Easy", "medium": "Medium", "hard": "Hard"}
+
+
+def clamp_to_band(d: int, band: tuple[int, int] | list[int] = (1, 5)) -> int:
+    lo, hi = band
+    return max(lo, min(hi, int(d)))
+
 
 def _profile_corpus(p: ResumeProfile) -> str:
     parts = [p.summary or "", p.headline or "", " ".join(p.domains), " ".join(p.ml_concepts)]
@@ -43,20 +56,33 @@ def compute_alignment(profile: ResumeProfile, role: Role) -> list[CompetencyAlig
     return out
 
 
-def calibrate(profile: ResumeProfile) -> Calibration:
+def calibrate(profile: ResumeProfile, level: str = "auto") -> Calibration:
     base = BASE_DIFFICULTY.get(profile.seniority, 2)
     if profile.strength == "strong" and base < 3:
         base += 1
     elif profile.strength == "emerging" and base > 2:
         base -= 1
     unlocked = profile.strength == "strong" or profile.seniority in ("senior", "lead")
-    rationale = (
+    who = (
         f"{profile.seniority.title()} profile"
         + (f" (~{profile.years_experience:g} yrs)" if profile.years_experience else "")
-        + f" with {profile.strength} ML depth -> base difficulty {base}/5."
-        + (" Advanced knowledge base unlocked." if unlocked else "")
+        + f" with {profile.strength} ML depth"
     )
-    return Calibration(seniority=profile.seniority, base_difficulty=base, advanced_unlocked=unlocked, rationale=rationale)
+    if level in LEVELS:
+        resume_base = base
+        base, band = LEVELS[level]
+        unlocked = level == "hard" or (unlocked and level == "medium")
+        rationale = (
+            f"Difficulty set to {LEVEL_NAMES[level]}: every question stays at level {band[0]}-{band[1]}/5 "
+            f"(base {base}). {who} would have suggested {resume_base}/5; the resume still decides the topics."
+            + (" Advanced knowledge base unlocked." if unlocked else "")
+        )
+    else:
+        level, band = "auto", (1, 5)
+        rationale = f"{who} -> base difficulty {base}/5." + (" Advanced knowledge base unlocked." if unlocked else "")
+    return Calibration(
+        seniority=profile.seniority, base_difficulty=base, advanced_unlocked=unlocked, rationale=rationale, level=level, band=band
+    )
 
 
 def select_books(role: Role, calibration: Calibration) -> list[str]:
@@ -69,11 +95,9 @@ def select_books(role: Role, calibration: Calibration) -> list[str]:
     return books
 
 
-def _clamp(d: int) -> int:
-    return max(1, min(5, int(d)))
-
-
-def heuristic_topics(role: Role, profile: ResumeProfile, alignment: list[CompetencyAlignment], base: int, n: int) -> list[PlannedTopic]:
+def heuristic_topics(
+    role: Role, profile: ResumeProfile, alignment: list[CompetencyAlignment], base: int, n: int, band: tuple[int, int] = (1, 5)
+) -> list[PlannedTopic]:
     comp_by_id = {c.id: c for c in role.competencies}
     ranked = sorted(alignment, key=lambda a: a.score, reverse=True)
     n_anchor = max(1, round(n * 0.6))
@@ -105,7 +129,7 @@ def heuristic_topics(role: Role, profile: ResumeProfile, alignment: list[Compete
             queries.append(f"{al.matched[0]} {comp.name.lower()}")
         elif techs:
             queries.append(f"{comp.keywords[0]} {techs[i % len(techs)].lower()}")
-        diff = _clamp(base + (1 if is_anchor and al.score >= 0.5 else 0 if is_anchor else -1) + (1 if i >= n - 2 else 0))
+        diff = clamp_to_band(base + (1 if is_anchor and al.score >= 0.5 else 0 if is_anchor else -1) + (1 if i >= n - 2 else 0), band)
         anchor = None
         if is_anchor:
             ev = next((s.evidence for s in profile.skills if s.name.lower() in [m.lower() for m in al.matched] and s.evidence), None)
@@ -130,7 +154,7 @@ def heuristic_topics(role: Role, profile: ResumeProfile, alignment: list[Compete
     return topics
 
 
-def _llm_topics(role: Role, profile: ResumeProfile, alignment, base: int, n: int) -> list[PlannedTopic]:
+def _llm_topics(role: Role, profile: ResumeProfile, alignment, base: int, n: int, band: tuple[int, int] = (1, 5)) -> list[PlannedTopic]:
     llm = get_llm()
     if not llm:
         raise LLMError("offline")
@@ -144,7 +168,7 @@ def _llm_topics(role: Role, profile: ResumeProfile, alignment, base: int, n: int
     prof["projects"] = [p.model_dump() for p in profile.projects[:5]]
     raw = llm.generate_json(
         T.PLAN_SYSTEM,
-        T.plan_prompt(role_payload, prof, [a.model_dump() for a in alignment], base, n),
+        T.plan_prompt(role_payload, prof, [a.model_dump() for a in alignment], base, n, band),
         temperature=0.5,
     )
     valid_ids = {c.id for c in role.competencies}
@@ -153,7 +177,7 @@ def _llm_topics(role: Role, profile: ResumeProfile, alignment, base: int, n: int
         try:
             if t.get("competency_id") not in valid_ids or not t.get("queries"):
                 continue
-            t["difficulty"] = _clamp(t.get("difficulty", base))
+            t["difficulty"] = clamp_to_band(t.get("difficulty", base), band)
             if t.get("question_style") not in STYLES:
                 t["question_style"] = STYLES[len(topics) % len(STYLES)]
             t["queries"] = [q for q in t["queries"] if isinstance(q, str) and q.strip()][:3]
@@ -165,16 +189,17 @@ def _llm_topics(role: Role, profile: ResumeProfile, alignment, base: int, n: int
     return topics[:n]
 
 
-def build_plan(profile: ResumeProfile, role: Role, n_topics: int) -> InterviewPlan:
+def build_plan(profile: ResumeProfile, role: Role, n_topics: int, level: str = "auto") -> InterviewPlan:
     alignment = compute_alignment(profile, role)
-    calibration = calibrate(profile)
+    calibration = calibrate(profile, level)
+    base, band = calibration.base_difficulty, calibration.band
     books = select_books(role, calibration)
     generator = "heuristic"
     try:
-        topics = _llm_topics(role, profile, alignment, calibration.base_difficulty, n_topics)
+        topics = _llm_topics(role, profile, alignment, base, n_topics, band)
         generator = get_llm().name  # type: ignore[union-attr]
         if len(topics) < n_topics:  # top up deterministically
-            extra = heuristic_topics(role, profile, alignment, calibration.base_difficulty, n_topics)
+            extra = heuristic_topics(role, profile, alignment, base, n_topics, band)
             used = {t.competency_id for t in topics}
             for t in extra:
                 if len(topics) >= n_topics:
@@ -184,7 +209,7 @@ def build_plan(profile: ResumeProfile, role: Role, n_topics: int) -> InterviewPl
     except LLMError as e:
         if str(e) != "offline":
             log.warning("LLM planning failed, using heuristic planner: %s", e)
-        topics = heuristic_topics(role, profile, alignment, calibration.base_difficulty, n_topics)
+        topics = heuristic_topics(role, profile, alignment, base, n_topics, band)
     return InterviewPlan(
         role_id=role.id, books=books, calibration=calibration, alignment=alignment, topics=topics, generator=generator
     )
