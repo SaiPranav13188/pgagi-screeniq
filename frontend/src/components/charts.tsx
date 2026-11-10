@@ -5,6 +5,20 @@ import { useState } from "react";
 import { scoreColor } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ Radar */
+const PADX = 80;
+
+/** Greedy word wrap into at most 3 lines of ~`max` characters. */
+function wrapLabel(label: string, max: number) {
+  const lines: string[] = [];
+  for (const w of label.split(/\s+/)) {
+    const last = lines[lines.length - 1];
+    if (last && (last + " " + w).length <= max) lines[lines.length - 1] = last + " " + w;
+    else lines.push(w);
+  }
+  if (lines.length > 3) return [...lines.slice(0, 2), lines.slice(2).join(" ").slice(0, max - 1) + "…"];
+  return lines;
+}
+
 export function RadarChart({ data, size = 320 }: { data: { label: string; value: number }[]; size?: number }) {
   const n = data.length;
   const cx = size / 2;
@@ -19,7 +33,8 @@ export function RadarChart({ data, size = 320 }: { data: { label: string; value:
   const zero = data.map((_, i) => pt(i, 2).join(",")).join(" ");
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[360px]">
+    // Extra horizontal room so side labels are never clipped.
+    <svg viewBox={`${-PADX} 0 ${size + PADX * 2} ${size}`} className="w-full max-w-[440px] overflow-visible">
       <defs>
         <radialGradient id="radar-fill">
           <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.35" />
@@ -66,8 +81,7 @@ export function RadarChart({ data, size = 320 }: { data: { label: string; value:
       {data.map((d, i) => {
         const [x, y] = pt(i, R + 26);
         const anchor = Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end";
-        const words = d.label.split(" ");
-        const lines = words.length > 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")] : [d.label];
+        const lines = wrapLabel(d.label, 18);
         return (
           <text key={d.label} x={x} y={y - (lines.length - 1) * 6} textAnchor={anchor} className="fill-ink-300 text-[10px]">
             {lines.map((l, k) => (
@@ -75,6 +89,9 @@ export function RadarChart({ data, size = 320 }: { data: { label: string; value:
                 {l}
               </tspan>
             ))}
+            <tspan x={x} dy={13} className="font-mono text-[10px]" style={{ fill: scoreColor(d.value) }}>
+              {d.value.toFixed(1)}
+            </tspan>
           </text>
         );
       })}

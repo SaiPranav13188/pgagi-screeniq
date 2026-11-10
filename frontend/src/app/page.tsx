@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Crosshair, Gauge, GitBranch, Layers, Quote, Route, ShieldCheck } from "lucide-react";
+import { ArrowRight, BookOpen, Crosshair, Gauge, GitBranch, Layers, MessagesSquare, Mic, Quote, Route, ShieldCheck, Volume2 } from "lucide-react";
+import { LiveInterviewDemo } from "@/components/live-demo";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatedNumber, Aurora, EASE, Magnetic, Reveal, SpotlightCard, Typewriter } from "@/components/motion";
@@ -35,7 +36,7 @@ export default function Home() {
                 <span className="absolute h-full w-full rounded-full bg-violet-400 animate-pulse-ring" />
                 <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
               </span>
-              Retrieval-augmented · Resume-aware · Adaptive
+              Voice AI interviewer · Retrieval-augmented · Adaptive
             </span>
           </motion.div>
 
@@ -189,6 +190,54 @@ export default function Home() {
             </div>
           </div>
         </motion.div>
+      </section>
+
+      {/* ------------------------------------------------------------ LIVE VOICE INTERVIEW */}
+      <section className="relative mx-auto max-w-6xl px-6 py-24">
+        <div className="grid items-center gap-12 md:grid-cols-2">
+          <Reveal>
+            <SectionLabel>Live AI interviewer</SectionLabel>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+              Not a form. A <span className="font-display italic font-normal text-gradient">conversation</span>.
+            </h2>
+            <p className="mt-4 text-ink-300">
+              Nova, the AI interviewer, asks every question out loud, listens to the spoken answer, and reacts like a real interviewer —
+              probing deeper when an answer reveals a gap, raising the bar when it&apos;s strong.
+            </p>
+            <ul className="mt-8 space-y-4">
+              {[
+                { icon: Volume2, c: "#a78bfa", t: "Speaks every question", d: "Natural voice with live, word-by-word captions." },
+                { icon: Mic, c: "#fb7185", t: "Hands-free answers", d: "The mic opens automatically; a short pause sends the answer." },
+                { icon: MessagesSquare, c: "#22d3ee", t: "Reacts and follows up", d: "Spoken feedback, follow-up probes and difficulty that adapts live." },
+              ].map((f, i) => (
+                <motion.li
+                  key={f.t}
+                  initial={{ opacity: 0, x: -12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 + i * 0.1, ease: EASE }}
+                  className="flex gap-3"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.03]">
+                    <f.icon className="h-4 w-4" style={{ color: f.c }} />
+                  </span>
+                  <div>
+                    <div className="text-sm font-medium text-white">{f.t}</div>
+                    <div className="text-sm text-ink-400">{f.d}</div>
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+            <div className="mt-8">
+              <Link href="/interview/new">
+                <Button icon={<Mic className="h-4 w-4" />}>Try a voice interview</Button>
+              </Link>
+            </div>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <LiveInterviewDemo />
+          </Reveal>
+        </div>
       </section>
 
       {/* ------------------------------------------------------------ PIPELINE */}
