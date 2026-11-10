@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrainCircuit } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { api } from "@/lib/api";
 import type { Health } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -78,6 +79,7 @@ export function Navbar() {
           <span className="hidden text-ink-300 sm:inline">
             {down ? "API offline" : !health ? "Connecting…" : health.llm.enabled ? "Gemini · live" : "Offline mode"}
           </span>
+          <ThemeToggle className="ml-2" />
         </div>
       </nav>
     </motion.header>

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { DecisionBanner, EvaluationCard } from "@/components/evaluation-card";
 import { Aurora, EASE, Typewriter } from "@/components/motion";
 import { RagLoader } from "@/components/rag-loader";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { TraceDrawer } from "@/components/trace-drawer";
 import { Badge, Button, DifficultyPips, LEVELS, ProgressBar, type Level } from "@/components/ui";
 import { AnswerModeToggle, ListenButton, VoicePanel, type AnswerMode } from "@/components/voice";
@@ -350,6 +351,7 @@ export default function InterviewRoom() {
             </span>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <span className={cn("hidden items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-xs sm:flex", elapsed > 300 ? "text-amber-300" : "text-ink-300")}>
               <Timer className="h-3.5 w-3.5" /> {formatDuration(elapsed) === "–" ? "0s" : formatDuration(elapsed)}
             </span>

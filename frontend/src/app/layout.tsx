@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
-import { Toaster } from "sonner";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
+import { ThemedToaster } from "@/components/theme-toggle";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -16,18 +17,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} noise min-h-screen antialiased`}>
         <Navbar />
         {children}
         <Footer />
-        <Toaster
-          theme="dark"
-          position="bottom-right"
-          toastOptions={{
-            style: { background: "rgba(14,16,24,0.95)", border: "1px solid rgba(255,255,255,0.08)", color: "#e7e9f2", backdropFilter: "blur(16px)" },
-          }}
-        />
+        <ThemedToaster />
       </body>
     </html>
   );
