@@ -177,42 +177,112 @@ export function useSpeechToText(onFinal: (text: string) => void) {
   return { supported, listening, interim, error, levels, lang, setLang: changeLang, start, stop, toggle: () => (listening ? stop() : start()) };
 }
 
-/** Text-to-speech for reading questions aloud. */
+/** Make LLM text pleasant to hear: drop LaTeX / markdown markup. */
+export function speakable(text: string) {
+  return text
+    .replace(/\$([^$]+)\$/g, "$1")
+    .replace(/[*`#>]/g, "")
+    .replace(/[\\{}_^]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function pickVoice(lang: string) {
+  const voices = window.speechSynthesis.getVoices();
+  const natural = /natural|neural|google|online|premium|enhanced/i;
+  return (
+    voices.find((v) => v.lang === lang && natural.test(v.name)) ||
+    voices.find((v) => v.lang.startsWith("en") && natural.test(v.name)) ||
+    voices.find((v) => v.lang === lang) ||
+    voices.find((v) => v.lang.startsWith("en")) ||
+    null
+  );
+}
+
+/**
+ * Text-to-speech for the AI interviewer.
+ *
+ * - Long text is split into sentences and queued, which avoids Chrome's habit of cutting
+ *   utterances off after ~15 seconds.
+ * - `progress` follows word boundaries (where the voice reports them) to drive live captions.
+ * - `speak(text, lang, onEnd)` calls `onEnd` exactly once — on completion, on error, on
+ *   cancel-by-replacement it is NOT called — and a watchdog covers browsers whose `onend`
+ *   never fires.
+ */
 export function useTextToSpeech() {
   const [supported, setSupported] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [text, setText] = useState("");
+  const [progress, setProgress] = useState(0);
+  const tokenRef = useRef(0);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    setSupported(typeof window !== "undefined" && "speechSynthesis" in window);
+    const ok = typeof window !== "undefined" && "speechSynthesis" in window;
+    setSupported(ok);
+    if (!ok) return;
+    window.speechSynthesis.getVoices(); // voices load lazily in Chrome
+    const warm = () => window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", warm);
     return () => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+      window.speechSynthesis.removeEventListener?.("voiceschanged", warm);
+      window.speechSynthesis.cancel();
     };
   }, []);
 
-  const speak = useCallback((text: string, lang = "en-IN") => {
-    if (!("speechSynthesis" in window)) return;
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    // Strip LaTeX-ish markup the LLM may include so it is read naturally.
-    const clean = text.replace(/\$([^$]+)\$/g, "$1").replace(/[\\{}_^]/g, " ");
-    const u = new SpeechSynthesisUtterance(clean);
-    const voices = synth.getVoices();
-    u.voice =
-      voices.find((v) => v.lang === lang && /natural|google|online/i.test(v.name)) ||
-      voices.find((v) => v.lang === lang) ||
-      voices.find((v) => v.lang.startsWith("en")) ||
-      null;
-    u.rate = 1;
-    u.pitch = 1;
-    u.onend = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
-    setSpeaking(true);
-    synth.speak(u);
-  }, []);
-
   const cancel = useCallback(() => {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    tokenRef.current++;
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
     setSpeaking(false);
   }, []);
 
-  return { supported, speaking, speak, cancel };
+  const speak = useCallback((raw: string, lang = "en-IN", onEnd?: () => void) => {
+    const clean = speakable(raw);
+    if (typeof window === "undefined" || !("speechSynthesis" in window) || !clean) {
+      onEnd?.();
+      return;
+    }
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    const token = ++tokenRef.current;
+    let done = false;
+    const finish = () => {
+      if (done || token !== tokenRef.current) return;
+      done = true;
+      if (watchdogRef.current) clearTimeout(watchdogRef.current);
+      setSpeaking(false);
+      setProgress(clean.length);
+      onEnd?.();
+    };
+
+    const sentences = clean.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) ?? [clean];
+    const voice = pickVoice(lang);
+    let offset = 0;
+    sentences.forEach((s, i) => {
+      const start = offset;
+      offset += s.length;
+      const u = new SpeechSynthesisUtterance(s.trim());
+      if (voice) u.voice = voice;
+      u.lang = voice?.lang || lang;
+      u.rate = 1.02;
+      u.onstart = () => token === tokenRef.current && setProgress(start);
+      u.onboundary = (e) => token === tokenRef.current && setProgress(start + e.charIndex + (e.charLength || 0));
+      if (i === sentences.length - 1) u.onend = finish;
+      u.onerror = (e) => {
+        if (e.error !== "interrupted" && e.error !== "canceled") finish();
+      };
+      synth.speak(u);
+    });
+
+    setText(clean);
+    setProgress(0);
+    setSpeaking(true);
+    // ~2.6 words/second plus slack; covers engines that never fire `onend`.
+    const words = clean.split(/\s+/).length;
+    watchdogRef.current = setTimeout(finish, (words / 2.6) * 1000 + 4000);
+  }, []);
+
+  return { supported, speaking, text, progress, speak, cancel };
 }

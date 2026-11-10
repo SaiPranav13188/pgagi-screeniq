@@ -1,28 +1,37 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Languages, Mic, MicOff, PenLine, Square, Volume2, VolumeX } from "lucide-react";
+import { Bot, Languages, Mic, MicOff, PenLine, Square, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LANGUAGES } from "@/lib/speech";
 import { cn } from "@/lib/utils";
 
-export type AnswerMode = "write" | "speak";
+export type AnswerMode = "live" | "write" | "speak";
 
 export function AnswerModeToggle({ mode, onChange, voiceSupported }: { mode: AnswerMode; onChange: (m: AnswerMode) => void; voiceSupported: boolean }) {
   const opts = [
-    { id: "write" as const, icon: PenLine, label: "Write" },
-    { id: "speak" as const, icon: Mic, label: "Speak" },
+    { id: "live" as const, icon: Bot, label: "AI Interview" },
+    { id: "write" as const, icon: PenLine, label: "Type" },
+    { id: "speak" as const, icon: Mic, label: "Dictate" },
   ];
   return (
     <div className="inline-flex rounded-xl border border-white/[0.07] bg-black/20 p-1">
       {opts.map((o) => {
-        const disabled = o.id === "speak" && !voiceSupported;
+        const disabled = o.id !== "write" && !voiceSupported;
         return (
           <button
             key={o.id}
             type="button"
             disabled={disabled}
-            title={disabled ? "Voice input needs Chrome or Edge" : `${o.label} your answer`}
+            title={
+              disabled
+                ? "Voice needs Chrome or Edge"
+                : o.id === "live"
+                  ? "Spoken conversation with the AI interviewer"
+                  : o.id === "write"
+                    ? "Type your answers"
+                    : "Dictate your answer, edit, then submit"
+            }
             onClick={() => onChange(o.id)}
             className={cn("relative flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-colors", disabled && "cursor-not-allowed opacity-40")}
           >

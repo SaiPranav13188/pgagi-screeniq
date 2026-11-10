@@ -12,12 +12,40 @@ import { RagLoader } from "@/components/rag-loader";
 import { TraceDrawer } from "@/components/trace-drawer";
 import { Badge, Button, DifficultyPips, ProgressBar } from "@/components/ui";
 import { AnswerModeToggle, ListenButton, VoicePanel, type AnswerMode } from "@/components/voice";
+import { INTERVIEWER_NAME, LiveStage, LiveStartGate, type LiveState, type Turn } from "@/components/live-interviewer";
 import { api, ApiError } from "@/lib/api";
 import { useSpeechToText, useTextToSpeech } from "@/lib/speech";
 import type { AnswerResult, Question, Session } from "@/lib/types";
 import { cn, formatDuration, QTYPE_LABEL, scoreColor } from "@/lib/utils";
 
 type Phase = "loading" | "generating" | "answering" | "evaluating" | "feedback" | "transition" | "finishing";
+
+/** Silence after the candidate's last words before the live interviewer sends the answer. */
+const SILENCE_MS = 4000;
+
+const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
+
+function firstSentences(text: string, max = 240) {
+  const parts = text.match(/[^.!?]+[.!?]+/g) ?? [text];
+  let out = "";
+  for (const p of parts) {
+    if ((out + p).length > max && out) break;
+    out += p;
+  }
+  return out.trim();
+}
+
+/** What the interviewer says after an answer, before moving on. */
+function reactionLine(r: AnswerResult, skipped: boolean, practice: boolean) {
+  const action = r.decision.action;
+  const feedback = practice && !skipped && r.evaluation?.feedback ? firstSentences(r.evaluation.feedback) + " " : "";
+  if (action === "complete")
+    return `${feedback}${skipped ? "No problem. " : "Thank you. "}That brings us to the end of the interview. I appreciate your time — I'm putting your report together now.`;
+  if (skipped) return pick(["No problem, let's move on.", "That's okay. Let's try a different area."]);
+  if (action === "follow_up")
+    return `${feedback}${pick(["Okay. I'd like to dig a little deeper into that.", "Thanks. Let me follow up on one part of your answer.", "Interesting. Let's explore that a bit further."])}`;
+  return `${feedback}${pick(["Thank you. Let's move on to the next topic.", "Got it, thanks. Moving on.", "Okay, that's helpful. Let's switch topics."])}`;
+}
 
 export default function InterviewRoom() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +61,9 @@ export default function InterviewRoom() {
   const startRef = useRef<number>(Date.now());
   const textRef = useRef<HTMLTextAreaElement>(null);
   const busy = useRef(false);
-  const [mode, setMode] = useState<AnswerMode>("write");
+  const [mode, setMode] = useState<AnswerMode>("live");
+  const [liveStarted, setLiveStarted] = useState(false);
+  const greetedRef = useRef(false);
 
   // Voice: dictated phrases are appended to the (still editable) answer.
   const stt = useSpeechToText((phrase) => {
@@ -45,26 +75,81 @@ export default function InterviewRoom() {
     });
   });
   const tts = useTextToSpeech();
+  const live = mode === "live" && stt.supported;
+  const say = tts.speak; // stable callback
+
+  // Latest values for callbacks that fire later (speech end, timers).
+  const sttRef = useRef(stt);
+  sttRef.current = stt;
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const questionRef = useRef(question);
+  questionRef.current = question;
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const liveOnRef = useRef(false);
+  liveOnRef.current = live && liveStarted;
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("answer-mode");
-      if (saved === "speak" || saved === "write") setMode(saved);
+      if (saved === "speak" || saved === "write" || saved === "live") setMode(saved);
     } catch {}
   }, []);
+
+  /** The interviewer reads a question aloud, then opens the microphone. */
+  const speakQuestion = useCallback(
+    (q: Question, opts: { repeat?: boolean } = {}) => {
+      const s = sessionRef.current;
+      sttRef.current.stop();
+      let lead = "";
+      if (!opts.repeat) {
+        const fresh = !s?.questions.some((x) => x.status !== "asked");
+        if (!greetedRef.current && fresh) {
+          const name = s?.candidate_name?.split(" ")[0];
+          lead =
+            `Hi${name ? ` ${name}` : ""}, I'm ${INTERVIEWER_NAME}, and I'll be interviewing you today for the ${s?.role_title ?? "role"} position. ` +
+            "I've gone through your resume, so some of my questions build on your own work. Answer out loud, and simply pause when you're finished. Let's begin. ";
+        } else if (q.kind === "primary" && q.seq > 1) {
+          lead = pick(["Here's the next question. ", "Next one. ", "Alright. "]);
+        }
+        greetedRef.current = true;
+      }
+      say(lead + q.text, sttRef.current.lang, () => {
+        if (liveOnRef.current && phaseRef.current === "answering" && questionRef.current?.id === q.id) {
+          startRef.current = Date.now();
+          sttRef.current.start();
+        }
+      });
+    },
+    [say],
+  );
+
   const changeMode = (m: AnswerMode) => {
     setMode(m);
+    if (m !== "live") tts.cancel();
     if (m === "write" && stt.listening) stt.stop();
+    if (m === "live") {
+      setLiveStarted(true); // a click counts as the user gesture browsers need for audio
+      if (phase === "answering" && question) speakQuestion(question, { repeat: greetedRef.current });
+    }
     try {
       localStorage.setItem("answer-mode", m);
     } catch {}
   };
 
-  // Stop the mic / speech when leaving the answering phase or changing question.
+  const startLive = () => {
+    setLiveStarted(true);
+    liveOnRef.current = true;
+    if (question && phase === "answering") speakQuestion(question);
+  };
+
+  // Stop the mic when leaving the answering phase or changing question. In live mode the
+  // interviewer keeps talking across phases (reactions), so speech is only cut otherwise.
   useEffect(() => {
     if (phase !== "answering") {
       if (stt.listening) stt.stop();
-      tts.cancel();
+      if (!live) tts.cancel();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, question?.id]);
@@ -86,7 +171,10 @@ export default function InterviewRoom() {
     startRef.current = Date.now();
     setElapsed(0);
     setPhase("answering");
-  }, []);
+    phaseRef.current = "answering";
+    questionRef.current = q;
+    if (liveOnRef.current) speakQuestion(q);
+  }, [speakQuestion]);
 
   const finish = useCallback(async () => {
     setPhase("finishing");
@@ -167,7 +255,13 @@ export default function InterviewRoom() {
       } catch {}
       setResult(r);
       await refresh();
-      if (session?.mode === "practice" && !skip) {
+      if (liveOnRef.current) {
+        // The interviewer reacts out loud, then carries on by itself.
+        setPhase("transition");
+        tts.speak(reactionLine(r, skip, session?.mode === "practice"), stt.lang, () =>
+          r.decision.action === "complete" ? finish() : fetchNext(),
+        );
+      } else if (session?.mode === "practice" && !skip) {
         setPhase("feedback");
       } else {
         setPhase("transition");
@@ -184,7 +278,8 @@ export default function InterviewRoom() {
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey && e.key.toLowerCase() === "m" && phase === "answering" && stt.supported) {
         e.preventDefault();
-        if (mode !== "speak") changeMode("speak");
+        if (!live && mode !== "speak") changeMode("speak");
+        if (live) tts.cancel();
         stt.toggle();
         return;
       }
@@ -205,6 +300,26 @@ export default function InterviewRoom() {
   const progress = session?.progress;
   const words = answer.trim() ? answer.trim().split(/\s+/).length : 0;
   const currentTopic = plan?.topics[question?.topic_index ?? 0];
+
+  // Live mode: once the candidate has said something and goes quiet, send automatically.
+  const armed = live && liveStarted && phase === "answering" && stt.listening && words >= 3 && !stt.interim;
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => submit(), SILENCE_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [armed, answer]);
+
+  const liveState: LiveState = tts.speaking ? "speaking" : phase === "answering" ? (stt.listening ? "listening" : "paused") : "thinking";
+  const history: Turn[] = (session?.questions ?? [])
+    .filter((q) => q.status !== "asked" && q.id !== question?.id)
+    .flatMap((q): Turn[] => [
+      { id: `${q.id}-q`, who: "ai", text: q.text, meta: `Q${q.seq} · ${q.topic}${q.kind === "follow_up" ? " · follow-up" : ""}` },
+      { id: `${q.id}-a`, who: "me", text: q.status === "skipped" ? "(skipped)" : q.answer?.text || "" },
+    ])
+    .slice(-8);
+  const showLive = live && liveStarted && phase !== "feedback" && phase !== "finishing" && !(phase === "loading" && !question);
+  const showGate = live && !liveStarted && phase === "answering" && !!question;
 
   return (
     <main className="relative min-h-screen">
@@ -337,14 +452,83 @@ export default function InterviewRoom() {
 
         {/* stage */}
         <section className="min-w-0">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <AnswerModeToggle mode={live ? "live" : mode === "live" ? "write" : mode} onChange={changeMode} voiceSupported={stt.supported} />
+            <span className="text-[11px] text-ink-500">
+              {live
+                ? `${INTERVIEWER_NAME} speaks · you answer out loud · pause to send`
+                : mode === "speak"
+                  ? "Voice is transcribed in your browser — edit before submitting"
+                  : stt.supported
+                    ? "Type your answer"
+                    : "Voice interview needs Chrome or Edge"}
+            </span>
+          </div>
           <AnimatePresence mode="wait">
-            {(phase === "loading" || phase === "generating") && (
+            {(phase === "loading" || phase === "generating") && !showLive && (
               <motion.div key="gen" exit={{ opacity: 0 }}>
                 <RagLoader topic={phase === "generating" ? nextTopicTitle(session) : undefined} books={plan?.books} />
               </motion.div>
             )}
 
-            {(phase === "answering" || phase === "evaluating") && question && (
+            {showGate && (
+              <motion.div key="gate">
+                <LiveStartGate
+                  name={session?.candidate_name?.split(" ")[0] ?? ""}
+                  role={session?.role_title}
+                  onStart={startLive}
+                  onType={() => changeMode("write")}
+                />
+              </motion.div>
+            )}
+
+            {showLive && (
+              <motion.div
+                key="live"
+                initial={{ opacity: 0, y: 24, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -16, filter: "blur(8px)" }}
+                transition={{ duration: 0.55, ease: EASE }}
+              >
+                <LiveStage
+                  state={liveState}
+                  aiText={tts.text || question?.text || ""}
+                  aiProgress={tts.progress}
+                  aiSpeaking={tts.speaking}
+                  thinkingLabel={
+                    phase === "evaluating"
+                      ? "Listening back to your answer…"
+                      : `Retrieving textbook passages${nextTopicTitle(session) ? ` on “${nextTopicTitle(session)}”` : ""} and preparing the next question…`
+                  }
+                  answer={answer}
+                  interim={stt.interim}
+                  levels={stt.levels}
+                  micError={stt.error}
+                  lang={stt.lang}
+                  onLang={stt.setLang}
+                  armed={armed}
+                  armKey={answer.length}
+                  silenceMs={SILENCE_MS}
+                  canAnswer={phase === "answering"}
+                  question={phase === "answering" || phase === "evaluating" ? question : null}
+                  chips={question?.trace?.chunks.filter((c) => c.cited).map((c) => ({ id: c.id, label: `${c.book_title} · p.${c.page_start}` }))}
+                  history={history}
+                  onSend={() => submit()}
+                  onSkip={() => submit(true)}
+                  onRepeat={() => question && speakQuestion(question, { repeat: true })}
+                  onToggleMic={stt.toggle}
+                  onAnswerNow={() => {
+                    tts.cancel();
+                    startRef.current = Date.now();
+                    stt.start();
+                  }}
+                  onTrace={() => setTraceOpen(true)}
+                  onClear={() => setAnswer("")}
+                />
+              </motion.div>
+            )}
+
+            {(phase === "answering" || phase === "evaluating") && question && !live && (
               <motion.div
                 key={`q-${question.id}`}
                 initial={{ opacity: 0, y: 24, filter: "blur(8px)" }}
@@ -415,10 +599,8 @@ export default function InterviewRoom() {
                   )}
                 >
                   <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-3">
-                    <AnswerModeToggle mode={mode} onChange={changeMode} voiceSupported={stt.supported} />
-                    <span className="hidden text-[11px] text-ink-500 sm:block">
-                      {mode === "speak" ? "Voice is transcribed in your browser — edit before submitting" : "Type your answer"}
-                    </span>
+                    <span className="text-[11px] uppercase tracking-[0.16em] text-ink-400">Your answer</span>
+                    <span className="hidden text-[11px] text-ink-500 sm:block">{mode === "speak" ? "Dictation" : "Typing"}</span>
                   </div>
                   <AnimatePresence initial={false}>
                     {mode === "speak" && (
@@ -517,7 +699,7 @@ export default function InterviewRoom() {
               </motion.div>
             )}
 
-            {phase === "transition" && result && (
+            {phase === "transition" && result && !live && (
               <motion.div
                 key="transition"
                 initial={{ opacity: 0, scale: 0.96 }}
@@ -559,7 +741,7 @@ export default function InterviewRoom() {
             )}
           </AnimatePresence>
 
-          {currentTopic && phase === "answering" && (
+          {currentTopic && phase === "answering" && !showGate && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="mt-6 text-center text-xs text-ink-500">
               Topic focus: {currentTopic.focus}
             </motion.p>

@@ -240,6 +240,20 @@ After every answer (`services/interview.py::_decide`):
 
 All thresholds are environment-configurable.
 
+### Live AI interview (voice conversation)
+
+By default the interview room runs as a spoken conversation with an AI interviewer ("Nova"):
+
+1. Nova greets the candidate by name and **reads each question aloud**, with live captions highlighted word by word.
+2. When it finishes, the **microphone opens automatically** and the answer is transcribed live (Web Speech API).
+3. After ~4 s of silence (`SILENCE_MS`) a countdown ring appears and the answer is **sent automatically** — speaking again cancels it; "I'm done — send", "Repeat question", "Answer now" (interrupt) and "Skip" are always available.
+4. Nova **reacts out loud** — "let me dig a little deeper" before a follow-up probe, spoken feedback in practice mode — then generates and asks the next question by itself.
+5. A chat-style transcript of the conversation so far sits under the interviewer.
+
+Everything runs in the browser (speech synthesis + recognition), so it adds no backend cost; answers go through the same
+`/answer` endpoint, evaluation and adaptive engine as typed ones. **Type** and **Dictate** modes remain available, and
+browsers without speech support fall back to typing.
+
 ---
 
 ## 7. Traceability (Context → Question → Answer → Storage)
@@ -346,4 +360,4 @@ pgagi/
 * Grading by an LLM is a strong signal, not ground truth — reports present a *signal*, and every grade is inspectable alongside its sources.
 * Scanned (image-only) resumes are rejected with a clear message; OCR would be the next addition.
 * Single-process deployment: embedded Qdrant has a file lock. For multi-worker deployment, point `QDRANT_URL` at a Qdrant server and `DATABASE_URL` at Postgres.
-* Natural extensions: a cross-encoder re-ranker after MMR, voice answers (speech-to-text), recruiter accounts/auth, and offline evaluation of question quality with a held-out rubric.
+* Natural extensions: a cross-encoder re-ranker after MMR, server-side neural TTS/STT for consistent voices across browsers, recruiter accounts/auth, and offline evaluation of question quality with a held-out rubric.

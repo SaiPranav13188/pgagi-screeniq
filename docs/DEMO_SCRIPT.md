@@ -34,6 +34,8 @@ Record at 1080p, browser zoom 90%, with the backend terminal visible in a corner
 
 ### 3:00 – 5:15 · Interactive interview (adaptive)
 - **Begin interview**. Show the RAG loader (*"retrieving and generating live"*).
+- **Start the interview** on the "Meet Nova" screen (wear headphones). Nova greets you and reads Q1 aloud with live captions; the mic opens by itself. Answer out loud, pause ~4 s → the countdown ring sends it, Nova reacts ("let me dig a little deeper…") and asks the next question on its own. *"It's a real spoken interview — the AI asks, I answer, it adapts."*
+- (For the parts below you can switch to **Type** mode with the toggle above the stage.)
 - On Q1 click **How was this generated?** → trace drawer: queries, 4 retrieved chunks with scores, which were **cited**, prompt version, latencies. *"Every question is traceable to the page it came from."*
 - Answer Q1 well (2–3 solid sentences) → feedback: score ring, covered/missed points, *"raising difficulty"* decision.
 - Answer Q2 weakly (one vague sentence) → score < 4.5 → **follow-up probe** badge; show it targets the missed point, and the sidebar shows the follow-up.
