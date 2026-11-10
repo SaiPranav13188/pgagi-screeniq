@@ -1,0 +1,28 @@
+Aarav Mehta
+aarav.mehta@example.com | github.com/aarav-ml | Bengaluru, India
+
+SUMMARY
+Machine Learning Engineer with 4 years of experience building production NLP and recommendation systems.
+Comfortable across the ML lifecycle: data pipelines, model training, evaluation and deployment.
+
+EXPERIENCE
+Machine Learning Engineer, CartNest (E-commerce) — 2022 - Present
+- Built a gradient boosting (XGBoost, LightGBM) ranking model for product recommendations; improved CTR by 9%.
+- Tuned models with grid search and 5-fold cross-validation; tracked precision, recall and ROC AUC.
+- Fine-tuned a BERT transformer in PyTorch for review sentiment analysis; served it with FastAPI and Docker on AWS.
+- Designed feature engineering pipelines in Pandas and Spark for 40M+ events per day.
+
+Data Scientist, FinSight Analytics (Finance) — 2020 - 2022
+- Credit card fraud detection with random forests and logistic regression on highly imbalanced data.
+- Used PCA for dimensionality reduction and k-means clustering for customer segmentation.
+
+PROJECTS
+Fraud Radar | Real-time anomaly detection on transactions using random forests and PCA in scikit-learn.
+DocQA | Retrieval-augmented generation chatbot over company docs with LangChain, FAISS and an LLM.
+
+EDUCATION
+B.Tech in Computer Science, National Institute of Technology, Trichy — 2020
+
+SKILLS
+Python, SQL, PyTorch, TensorFlow, scikit-learn, XGBoost, LightGBM, Pandas, NumPy, Spark,
+NLP, Transformers, Deep Learning, Neural Networks, Docker, AWS, Git, MLflow

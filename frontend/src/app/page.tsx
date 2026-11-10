@@ -405,9 +405,6 @@ export default function Home() {
         </Reveal>
       </section>
 
-      <footer className="border-t border-white/[0.05] py-8 text-center text-xs text-ink-400">
-        Built for the PGAGI AI/ML &amp; Backend Engineering assignment · FastAPI · Qdrant · Next.js
-      </footer>
     </main>
   );
 }

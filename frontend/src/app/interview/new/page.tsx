@@ -4,10 +4,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
+  BarChart3,
   BookOpen,
+  Bot,
+  BrainCircuit,
   Check,
   FileText,
+  FlaskConical,
   GraduationCap,
+  Sparkles,
   Loader2,
   MessageSquareQuote,
   Play,
@@ -27,6 +32,17 @@ import type { Role, Session } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STEPS = ["Resume", "Role", "Settings"];
+
+const SAMPLES = [
+  { file: "aarav_mehta_ml_engineer.txt", name: "Aarav Mehta", d: "ML engineer · 4 yrs", grad: "from-violet-500 to-indigo-500" },
+  { file: "riya_kapoor_student.txt", name: "Riya Kapoor", d: "CS student · internships", grad: "from-pink-500 to-rose-500" },
+];
+
+const ROLE_STYLE: Record<string, { icon: typeof BrainCircuit; grad: string }> = {
+  ai_ml_engineer: { icon: BrainCircuit, grad: "from-violet-500 to-indigo-500" },
+  data_scientist: { icon: BarChart3, grad: "from-cyan-400 to-blue-500" },
+  ml_research: { icon: FlaskConical, grad: "from-pink-500 to-fuchsia-600" },
+};
 const PROCESS = [
   { t: "Uploading resume", d: "Validating file type and size" },
   { t: "Extracting text", d: "Layout-aware PDF parsing" },
@@ -61,6 +77,18 @@ export default function NewInterview() {
     onDropAccepted: (f) => setFile(f[0]),
     onDropRejected: (r) => toast.error(r[0]?.errors[0]?.message || "File rejected"),
   });
+
+  async function loadSample(s: (typeof SAMPLES)[number]) {
+    try {
+      const res = await fetch(`/samples/${s.file}`);
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      setFile(new File([blob], s.file, { type: "text/plain" }));
+      toast.success(`Loaded ${s.name}'s sample resume`);
+    } catch {
+      toast.error("Could not load the sample resume");
+    }
+  }
 
   const go = (n: number) => {
     setDir(n > step ? 1 : -1);
@@ -201,6 +229,39 @@ export default function NewInterview() {
                               )}
                             </AnimatePresence>
                           </div>
+                          {!file && (
+                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                              <div className="flex items-center gap-3 text-xs text-ink-400">
+                                <span className="h-px flex-1 bg-white/[0.07]" />
+                                <Sparkles className="h-3.5 w-3.5 text-violet-300" /> No resume handy? Try a sample
+                                <span className="h-px flex-1 bg-white/[0.07]" />
+                              </div>
+                              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                {SAMPLES.map((s) => (
+                                  <motion.button
+                                    key={s.file}
+                                    type="button"
+                                    whileHover={{ y: -2 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => loadSample(s)}
+                                    className="group flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3 text-left transition hover:border-violet-400/40 hover:bg-white/[0.04]"
+                                  >
+                                    <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-sm font-semibold text-white", s.grad)}>
+                                      {s.name
+                                        .split(" ")
+                                        .map((w) => w[0])
+                                        .join("")}
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block text-sm font-medium text-white">{s.name}</span>
+                                      <span className="block text-xs text-ink-400">{s.d}</span>
+                                    </span>
+                                    <ArrowRight className="h-4 w-4 text-ink-500 transition group-hover:translate-x-0.5 group-hover:text-violet-300" />
+                                  </motion.button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
                           <label className="block">
                             <span className="text-xs text-ink-400">Candidate name (optional — detected from the resume otherwise)</span>
                             <input
@@ -217,6 +278,7 @@ export default function NewInterview() {
                         <div className="grid gap-4">
                           {roles.map((r) => {
                             const sel = roleId === r.id;
+                            const rs = ROLE_STYLE[r.id] ?? ROLE_STYLE.ai_ml_engineer;
                             return (
                               <SpotlightCard
                                 key={r.id}
@@ -225,8 +287,24 @@ export default function NewInterview() {
                                 className={cn("cursor-pointer p-5 transition-all duration-300", sel && "ring-2 ring-violet-400/70 shadow-[0_0_40px_-10px_rgba(139,92,246,0.8)]")}
                               >
                                 <div className="flex items-start gap-4">
-                                  <div className={cn("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border transition-colors", sel ? "border-violet-400 bg-violet-500" : "border-white/20")}>
-                                    <AnimatePresence>{sel && <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><Check className="h-3 w-3 text-white" /></motion.span>}</AnimatePresence>
+                                  <div className="relative shrink-0">
+                                    <div className={cn("grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br shadow-lg transition-transform duration-300", rs.grad, sel && "scale-105")}>
+                                      <rs.icon className="h-6 w-6 text-white" />
+                                    </div>
+                                    <div
+                                      className={cn(
+                                        "absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full border-2 border-ink-900 transition-colors",
+                                        sel ? "bg-violet-500" : "bg-ink-700",
+                                      )}
+                                    >
+                                      <AnimatePresence>
+                                        {sel && (
+                                          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                                            <Check className="h-3 w-3 text-white" />
+                                          </motion.span>
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
                                   </div>
                                   <div className="flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
@@ -295,6 +373,17 @@ export default function NewInterview() {
                             <p className="mt-2 text-xs text-ink-400">
                               Up to 2 adaptive follow-up probes may be added when an answer reveals a gap. ≈ {count * 3}–{count * 4} minutes.
                             </p>
+                          </div>
+                          <div className="flex items-start gap-3 rounded-2xl border border-violet-400/20 bg-violet-500/[0.06] p-4">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500">
+                              <Bot className="h-4 w-4 text-white" />
+                            </span>
+                            <div className="text-sm">
+                              <div className="font-medium text-white">Spoken interview with Nova</div>
+                              <div className="mt-0.5 text-xs leading-relaxed text-ink-300">
+                                Nova asks every question out loud and listens to your answers (Chrome or Edge). You can switch to typing at any time.
+                              </div>
+                            </div>
                           </div>
                           <div className="glass rounded-2xl p-4 text-sm">
                             <div className="text-xs uppercase tracking-[0.16em] text-ink-400">Summary</div>
